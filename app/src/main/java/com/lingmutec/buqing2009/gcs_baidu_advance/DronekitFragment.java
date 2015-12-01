@@ -96,6 +96,12 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
 
     }
 
+//    public static DronekitFragment getInstance(Bundle bundle) {
+//        DronekitFragment dronekitFragment = new DronekitFragment();
+//        dronekitFragment.setArguments(bundle);
+//        return dronekitFragment;
+//    }
+
 
     @Override
     public void onStart() {

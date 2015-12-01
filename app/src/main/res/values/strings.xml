@@ -2,6 +2,7 @@
     <string name="app_name">GCS_Baidu_Advance</string>
     <string name="mtype_select_bottom_name">卫星/普通切换</string>
     <string name="m_locate_bottom_name">定位</string>
+    <string name="action_settings">Settings</string>
 
     <string-array name="drone_connection_types">
         <item>USB</item>

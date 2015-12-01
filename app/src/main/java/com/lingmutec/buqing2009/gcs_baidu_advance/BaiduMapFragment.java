@@ -4,6 +4,8 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,7 +32,7 @@ import com.baidu.mapapi.model.LatLng;
 /**
  * Created by buqing2009 on 15-11-26.
  */
-public class BaiduMapFragment extends Fragment implements View.OnClickListener{
+public class BaiduMapFragment extends Fragment implements View.OnClickListener {
 
     private MapView mMapView = null;
     private BaiduMap bdMap;
@@ -42,6 +44,16 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
     private BitmapDescriptor mCurrentMarker;
     private MyLocationConfiguration config;
     private LocationClient mLocationClient = null;
+
+    //新建drone的marker
+    BitmapDescriptor droneMarker;
+
+    //下面获取Dronekit Fragment的GPS信息
+    FragmentManager fragmentManager;
+    DronekitFragment dronekitFragment;
+
+    //定义Handler
+    Handler myhandler = new Handler();
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,10 +76,10 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
         MapStatusUpdate msu = MapStatusUpdateFactory.zoomTo(15f);
         bdMap.setMapStatus(msu);
 
-
-        //新建drone的marker
-        BitmapDescriptor droneMarker = BitmapDescriptorFactory.fromResource(R.drawable.drone_marker);
-
+        //GPS在百度地图上的显示具体变量
+        droneMarker = BitmapDescriptorFactory.fromResource(R.drawable.drone_marker);
+        fragmentManager = this.getActivity().getFragmentManager();
+        dronekitFragment = (DronekitFragment) fragmentManager.findFragmentByTag("Dronekit");
 
         // 定位初始化
         mLocationClient = new LocationClient(this.getActivity().getApplicationContext());
@@ -83,6 +95,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
 
         BitmapDescriptor myMarker = BitmapDescriptorFactory
                 .fromResource(R.drawable.download);
+
         MyLocationConfiguration config = new MyLocationConfiguration(
                 MyLocationConfiguration.LocationMode.FOLLOWING, true, myMarker);
 
@@ -118,19 +131,14 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
             }
         });
 
-        //下面获取Dronekit Fragment的GPS信息
-        FragmentManager fragmentManager = this.getActivity().getFragmentManager();
-        DronekitFragment dronekitFragment = (DronekitFragment) fragmentManager.findFragmentById(R.id.dronekit_fragment);
-        if (dronekitFragment.isGPSReturn()) {
-            Double[] gpsPos = dronekitFragment.getGPSPos();
-            if (gpsPos[0] != null && gpsPos[1] != null) {
-                LatLng dronePos = new LatLng(gpsPos[0], gpsPos[1]);
-                OverlayOptions options = new MarkerOptions().position(dronePos).icon(droneMarker);
-                bdMap.addOverlay(options);
-            }
-        }
+        //调用百度地图循环获取GPS坐标的任务
+        myhandler.post(getGPSTask);//立即调用
+
+
+
 
     }
+
 
     @Override
     public void onStart() {
@@ -168,6 +176,8 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
         mMapView.onPause();
     }
 
+
+
     protected void selectMap() {
         if (bdMap.getMapType() == BaiduMap.MAP_TYPE_NORMAL) {
             bdMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
@@ -195,4 +205,31 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
                 break;
         }
     }
+
+    //新建一个循环获取GPS的任务
+    protected Runnable getGPSTask = new Runnable() {
+        @Override
+        public void run() {
+            myhandler.postDelayed(this,500);
+            updateGPSOnBaiduMap();
+        }
+    };
+
+    public void updateGPSOnBaiduMap(){
+
+        if (dronekitFragment.isGPSReturn()) {
+            Double[] gpsPos = dronekitFragment.getGPSPos();
+            Log.e("GPS_JIN",gpsPos[0].toString());
+            Log.e("GPS_WEI",gpsPos[1].toString());
+            if (gpsPos[0] != null && gpsPos[1] != null) {
+                LatLng dronePos = new LatLng(gpsPos[0], gpsPos[1]);
+                OverlayOptions options = new MarkerOptions().position(dronePos).icon(droneMarker);
+                bdMap.addOverlay(options);
+            }
+        }
+
+    }
+
+
+
 }
