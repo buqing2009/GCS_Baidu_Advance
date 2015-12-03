@@ -28,6 +28,7 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.utils.CoordinateConverter;
 
 /**
  * Created by buqing2009 on 15-11-26.
@@ -41,6 +42,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
 //    private Toast mToast=null;
 //    private BMapManager mBMapManager=null;
     private boolean firstLocation;
+    private boolean droneFirstLocation;
     private BitmapDescriptor mCurrentMarker;
     private MyLocationConfiguration config;
     private LocationClient mLocationClient = null;
@@ -84,6 +86,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
         // 定位初始化
         mLocationClient = new LocationClient(this.getActivity().getApplicationContext());
         firstLocation = true;
+        droneFirstLocation = true;
 
         // 设置定位的相关配置
         LocationClientOption option = new LocationClientOption();
@@ -198,7 +201,6 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.mtype_select_bottom:
                 selectMap();
-                Log.e("bluking", "fuck u!");
                 break;
             case R.id.mlocate_bottom:
                 blu_locate();
@@ -216,18 +218,41 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
     };
 
     public void updateGPSOnBaiduMap(){
+            if (dronekitFragment.isGPSReturn()) {
+                if(droneFirstLocation){
+                    droneFirstLocation = false;
+                    Double[] gpsPos = dronekitFragment.getGPSPos();
+                    if (gpsPos[0] != null && gpsPos[1] != null) {
+                        LatLng dronePos = new LatLng(gpsPos[1], gpsPos[0]);
+                        // 将GPS设备采集的原始GPS坐标转换成百度坐标
+                        CoordinateConverter converter  = new CoordinateConverter();
+                        converter.from(CoordinateConverter.CoordType.GPS);
+                        // sourceLatLng待转换坐标
+                        converter.coord(dronePos);
+                        LatLng dronePos_bd = converter.convert();
+                        OverlayOptions options = new MarkerOptions().position(dronePos_bd).icon(droneMarker);
+                        MapStatusUpdate status = MapStatusUpdateFactory.newLatLng(dronePos_bd);
+                        bdMap.animateMapStatus(status);
+                        bdMap.addOverlay(options);
+                    }
+                }else{
+                    Double[] gpsPos = dronekitFragment.getGPSPos();
+                    Log.e("GPS_JIN", gpsPos[0].toString());
+                    Log.e("GPS_WEI", gpsPos[1].toString());
+                    if (gpsPos[0] != null && gpsPos[1] != null) {
+                        LatLng dronePos = new LatLng(gpsPos[1], gpsPos[0]);
+                        // 将GPS设备采集的原始GPS坐标转换成百度坐标
+                        CoordinateConverter converter  = new CoordinateConverter();
+                        converter.from(CoordinateConverter.CoordType.GPS);
+                        // sourceLatLng待转换坐标
+                        converter.coord(dronePos);
+                        LatLng dronePos_bd = converter.convert();
+                        OverlayOptions options = new MarkerOptions().position(dronePos_bd).icon(droneMarker);
+                        bdMap.addOverlay(options);
 
-        if (dronekitFragment.isGPSReturn()) {
-            Double[] gpsPos = dronekitFragment.getGPSPos();
-            Log.e("GPS_JIN",gpsPos[0].toString());
-            Log.e("GPS_WEI",gpsPos[1].toString());
-            if (gpsPos[0] != null && gpsPos[1] != null) {
-                LatLng dronePos = new LatLng(gpsPos[0], gpsPos[1]);
-                OverlayOptions options = new MarkerOptions().position(dronePos).icon(droneMarker);
-                bdMap.addOverlay(options);
+                    }
+                }
             }
-        }
-
     }
 
 

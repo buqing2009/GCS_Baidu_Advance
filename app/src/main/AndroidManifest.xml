@@ -36,9 +36,13 @@
         </service>
 
         <!-- Ubuntu14.04-->
+        <!--<meta-data-->
+            <!--android:name="com.baidu.lbsapi.API_KEY"-->
+            <!--android:value="c5tXcaweZ7hFZrfQYpwmMst7" />-->
+        <!-- Mac -->
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="c5tXcaweZ7hFZrfQYpwmMst7" />
+            android:value="41z742jZdYaiD0HGcLNTa86p" />
 
         <activity android:name=".MainActivity"
             android:screenOrientation="landscape"
