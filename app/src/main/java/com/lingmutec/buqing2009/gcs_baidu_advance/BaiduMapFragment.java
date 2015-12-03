@@ -20,6 +20,7 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.InfoWindow;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
@@ -33,7 +34,7 @@ import com.baidu.mapapi.utils.CoordinateConverter;
 /**
  * Created by buqing2009 on 15-11-26.
  */
-public class BaiduMapFragment extends Fragment implements View.OnClickListener {
+public class BaiduMapFragment extends Fragment implements View.OnClickListener{
 
     private MapView mMapView = null;
     private BaiduMap bdMap;
@@ -49,7 +50,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
 
     //新建drone的marker
     BitmapDescriptor droneMarker;
-
+    BitmapDescriptor destiMarker;//设置终点marker
     //下面获取Dronekit Fragment的GPS信息
     FragmentManager fragmentManager;
     DronekitFragment dronekitFragment;
@@ -80,6 +81,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
 
         //GPS在百度地图上的显示具体变量
         droneMarker = BitmapDescriptorFactory.fromResource(R.drawable.drone_marker);
+        destiMarker = BitmapDescriptorFactory.fromResource(R.drawable.destimarker);
         fragmentManager = this.getActivity().getFragmentManager();
         dronekitFragment = (DronekitFragment) fragmentManager.findFragmentByTag("Dronekit");
 
@@ -137,7 +139,40 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
         //调用百度地图循环获取GPS坐标的任务
         myhandler.post(getGPSTask);//立即调用
 
+        //添加长按地图获得标记终点
+       bdMap.setOnMapLongClickListener(new BaiduMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(final LatLng select_point) {
+                Log.e("bluking_point",select_point.toString());
+                //创建InfoWindow展示的view
+                Button setDesPoint = new Button(getActivity().getApplicationContext());
+                setDesPoint.setText("选择为终点");
+//                button.setBackgroundResource(R.drawable.popup);
+                //创建InfoWindow , 传入 view， 地理坐标， y 轴偏移量
+                InfoWindow mInfoWindow = new InfoWindow(setDesPoint, select_point, -47);
+                //显示InfoWindow
+                bdMap.showInfoWindow(mInfoWindow);
 
+                setDesPoint.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        OverlayOptions options = new MarkerOptions().position(select_point).icon(destiMarker);
+                        bdMap.addOverlay(options);
+
+                        // 将GPS设备采集的原始GPS坐标转换成百度坐标
+                        CoordinateConverter converter  = new CoordinateConverter();
+                        converter.from(CoordinateConverter.CoordType.GPS);
+                        // sourceLatLng待转换坐标
+                        converter.coord(select_point);
+                        LatLng destiConverted = converter.convert();
+                        //@bluking通过投机取巧方法把百度坐标转化为GPS坐标
+                        LatLng destiGPSPoint = new LatLng(2*select_point.latitude - destiConverted.latitude,2*select_point.longitude-destiConverted.longitude);
+
+                        dronekitFragment.setGPSPos(destiGPSPoint);
+                    }
+                });
+            }
+        });
 
 
     }
@@ -217,6 +252,7 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
         }
     };
 
+    //@bluking 另开线程实时刷新GPS位置并在显示在地图上
     public void updateGPSOnBaiduMap(){
             if (dronekitFragment.isGPSReturn()) {
                 if(droneFirstLocation){
@@ -254,6 +290,8 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener {
                 }
             }
     }
+
+
 
 
 

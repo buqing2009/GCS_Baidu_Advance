@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 
+import com.baidu.mapapi.model.LatLng;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.drone.DroneStateApi;
@@ -54,6 +55,7 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     private final int DEFAULT_UDP_PORT = 14550;
     private final int DEFAULT_USB_BAUD_RATE = 57600;
     Spinner modeSelector;
+    private LatLng destiGPSPos;//获取百度地图终点的GPS坐标
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -324,8 +326,11 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     protected void updateVehicleModesForType(int droneType) {
 
         List<VehicleMode> vehicleModes = VehicleMode.getVehicleModePerDroneType(droneType);
-        ArrayAdapter<VehicleMode> vehicleModeArrayAdapter = new ArrayAdapter<VehicleMode>(this.getActivity().getApplicationContext(), android.R.layout.simple_spinner_item, vehicleModes);
-        vehicleModeArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // ArrayAdapter<VehicleMode> vehicleModeArrayAdapter = new ArrayAdapter<VehicleMode>(this.getActivity().getApplicationContext(), android.R.layout.simple_list_item_1, vehicleModes);
+        //@bluking 动态增加mode菜单选项，并自定义样式列表
+        ArrayAdapter<VehicleMode> vehicleModeArrayAdapter = new ArrayAdapter<VehicleMode>(this.getActivity().getApplicationContext(), R.layout.myspinner, vehicleModes);
+        //@bluking 动态应用样式列表到下拉菜单所有item类目
+        vehicleModeArrayAdapter.setDropDownViewResource(R.layout.checkedtest_blu);
         this.modeSelector.setAdapter(vehicleModeArrayAdapter);
     }
 
@@ -416,6 +421,21 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
                 break;
             default:
                 break;
+        }
+
+    }
+
+    public void setGPSPos(LatLng destipos){
+        destiGPSPos = destipos;
+        runSimpleMission();
+
+    }
+    //从起点到终点的简单飞行任务
+    public void runSimpleMission(){
+        State vehicleState = this.drone.getAttribute(AttributeType.STATE);
+        if (vehicleState.isFlying()) {
+            LatLong destiGPSPos_fordk = new LatLong(destiGPSPos.latitude,destiGPSPos.longitude);
+            this.guide.sendGuidedPoint(this.drone,destiGPSPos_fordk,true);
         }
     }
 }

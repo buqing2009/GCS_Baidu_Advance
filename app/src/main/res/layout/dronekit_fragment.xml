@@ -77,7 +77,8 @@
                 android:layout_below="@+id/connectionTypeLabel"
                 android:layout_column="1"
                 android:focusable="true"
-                android:spinnerMode="dropdown" />
+                android:spinnerMode="dropdown"
+                 />
         </TableRow>
 
         <TableRow
