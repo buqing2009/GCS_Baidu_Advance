@@ -273,8 +273,8 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
                     }
                 }else{
                     Double[] gpsPos = dronekitFragment.getGPSPos();
-                    Log.e("GPS_JIN", gpsPos[0].toString());
-                    Log.e("GPS_WEI", gpsPos[1].toString());
+//                    Log.e("GPS_JIN", gpsPos[0].toString());
+//                    Log.e("GPS_WEI", gpsPos[1].toString());
                     if (gpsPos[0] != null && gpsPos[1] != null) {
                         LatLng dronePos = new LatLng(gpsPos[1], gpsPos[0]);
                         // 将GPS设备采集的原始GPS坐标转换成百度坐标

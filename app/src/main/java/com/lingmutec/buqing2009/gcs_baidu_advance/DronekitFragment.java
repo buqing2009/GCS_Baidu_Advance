@@ -1,6 +1,7 @@
 package com.lingmutec.buqing2009.gcs_baidu_advance;
 
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,8 +19,10 @@ import android.view.View;
 import com.baidu.mapapi.model.LatLng;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
-import com.o3dr.android.client.apis.drone.DroneStateApi;
-import com.o3dr.android.client.apis.drone.GuidedApi;
+//曾经的dronestate包更新为vehicle api
+import com.o3dr.android.client.apis.VehicleApi;
+//曾经的guided api变为control api包
+import com.o3dr.android.client.apis.ControlApi;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.coordinate.LatLong;
@@ -37,6 +40,8 @@ import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
+import com.o3dr.android.client.apis.*;
+import com.o3dr.services.android.lib.model.AbstractCommandListener;
 
 import java.util.List;
 
@@ -49,13 +54,21 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     private Drone drone;
     private int droneType = Type.TYPE_UNKNOWN;
     private ControlTower controlTower;
-    private DroneStateApi dronestate;
-    private GuidedApi guide;
+    private VehicleApi dronestate;
+    private ControlApi guide;
     private final Handler handler = new Handler();
     private final int DEFAULT_UDP_PORT = 14550;
     private final int DEFAULT_USB_BAUD_RATE = 57600;
     Spinner modeSelector;
     private LatLng destiGPSPos;//获取百度地图终点的GPS坐标
+    FragmentManager fragmentManager;
+    ControllerFragment controllerFragment;
+    //定义Handler
+    Handler myhandler = new Handler();
+    //是否允许控制
+    boolean allow_control;
+    //存放控制量
+    Double[] controller_val;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -68,11 +81,19 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        allow_control = false;
+        controller_val = new Double[4];
+
+
         final Context context = getActivity().getApplicationContext();
         this.controlTower = new ControlTower(context);
         this.drone = new Drone(context);
-        this.dronestate = new DroneStateApi();
-        this.guide = new GuidedApi();
+
+        fragmentManager = this.getActivity().getFragmentManager();
+        controllerFragment = (ControllerFragment) fragmentManager.findFragmentByTag("Controller");
+        //新式获取API的方式，比以往更为安全
+        this.dronestate = VehicleApi.getApi(this.drone);
+        this.guide = ControlApi.getApi(this.drone);
         this.modeSelector = (Spinner) getActivity().findViewById(R.id.modeSelect);
         this.modeSelector.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
             @Override
@@ -86,15 +107,20 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
             }
         });
 
-        Button btnConnect = (Button)getActivity().findViewById(R.id.btnConnect);
-        Button btnArmTakeOff = (Button)getActivity().findViewById(R.id.btnArmTakeOff);
-        Button button_up = (Button)getActivity().findViewById(R.id.button_up);
-        Button button_down =(Button)getActivity().findViewById(R.id.button_down);
+        Button btnConnect = (Button) getActivity().findViewById(R.id.btnConnect);
+        Button btnArmTakeOff = (Button) getActivity().findViewById(R.id.btnArmTakeOff);
+        Button button_up = (Button) getActivity().findViewById(R.id.button_up);
+        Button button_down = (Button) getActivity().findViewById(R.id.button_down);
+        Button button_control = (Button) getActivity().findViewById(R.id.RC_Control);
 
         btnConnect.setOnClickListener(this);
         btnArmTakeOff.setOnClickListener(this);
         button_up.setOnClickListener(this);
         button_down.setOnClickListener(this);
+        button_control.setOnClickListener(this);
+
+        myhandler.post(getController);//立即调用
+
 
     }
 
@@ -231,7 +257,7 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     public void onFlightModeSelected(View view) {
         VehicleMode vehicleMode = (VehicleMode) this.modeSelector.getSelectedItem();
 //        this.drone.changeVehicleMode(vehicleMode);
-        this.dronestate.setVehicleMode(this.drone, vehicleMode);
+        this.dronestate.setVehicleMode(vehicleMode);
     }
 
     public void onArmButtonTap(View view) {
@@ -241,18 +267,33 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
         if (vehicleState.isFlying()) {
             // Land
 //            this.drone.changeVehicleMode(VehicleMode.COPTER_LAND);
-            this.dronestate.setVehicleMode(this.drone, VehicleMode.COPTER_LAND);
+            this.dronestate.setVehicleMode(VehicleMode.COPTER_LAND);
         } else if (vehicleState.isArmed()) {
             // Take off
 //            this.drone.doGuidedTakeoff(10);
-            this.guide.takeoff(this.drone, 10);
+            this.guide.takeoff(10, new AbstractCommandListener() {
+                @Override
+                public void onSuccess() {
+                    Log.d("bluking", "Takeoff Successfully");
+                }
+
+                @Override
+                public void onError(int executionError) {
+                    Log.d("bluking", "Takeoff Failure");
+                }
+
+                @Override
+                public void onTimeout() {
+                    Log.d("bluking", "Takeoff Timeout");
+                }
+            });
         } else if (!vehicleState.isConnected()) {
             // Connect
             alertUser("Connect to a drone first");
         } else {
             // Connected but not Armed
 //            this.drone.arm(true);
-            this.dronestate.arm(this.drone, true);
+            this.dronestate.arm(true);
         }
     }
 
@@ -359,13 +400,14 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
     }
 
     public void onUpBottonTap(View view) {
+
         State vehicleState = this.drone.getAttribute(AttributeType.STATE);
         if (vehicleState.isFlying()) {
 //            Gps droneGps = this.drone.getAttribute(AttributeType.GPS);
 //            LatLong vehiclePosition = droneGps.getPosition();
             Altitude droneAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);//获取当前的海拔高度
             double altitude_set = droneAltitude.getAltitude();
-            this.guide.setGuidedAltitude(this.drone, (altitude_set + 2.0));
+            this.guide.climbTo((altitude_set + 2.0));
 //            this.guide.sendGuidedPoint(this.drone,vehiclePosition,true);
 //            this.guide.pauseAtCurrentLocation(this.drone);
 
@@ -379,28 +421,28 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
 //            LatLong vehiclePosition = droneGps.getPosition();
             Altitude droneAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);//获取当前的海拔高度
             double altitude_set = droneAltitude.getAltitude();
-            this.guide.setGuidedAltitude(this.drone, (altitude_set - 2.0));
+            this.guide.climbTo((altitude_set - 2.0));
 //            this.guide.sendGuidedPoint(this.drone,vehiclePosition,true);
 //            this.guide.pauseAtCurrentLocation(this.drone);
         }
     }
 
-    public boolean isGPSReturn(){
+    public boolean isGPSReturn() {
         State vehicleState = this.drone.getAttribute(AttributeType.STATE);
-        if(vehicleState.isFlying()){
+        if (vehicleState.isFlying()) {
             return true;
-        }else {
+        } else {
             return false;
         }
     }
 
-    public Double[] getGPSPos(){
+    public Double[] getGPSPos() {
         Double[] gpsPos = new Double[2];
         Gps droneGps = this.drone.getAttribute(AttributeType.GPS);
         LatLong vehiclePosition = droneGps.getPosition();
         gpsPos[0] = vehiclePosition.getLongitude();//获取经度
         gpsPos[1] = vehiclePosition.getLatitude();//获取纬度
-        return  gpsPos;
+        return gpsPos;
     }
 
 
@@ -419,23 +461,103 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
             case R.id.button_down:
                 onDownBottonTap(v);
                 break;
+            case R.id.RC_Control:
+                controllerAllow(v);
+                break;
             default:
                 break;
         }
 
     }
 
-    public void setGPSPos(LatLng destipos){
+    public void setGPSPos(LatLng destipos) {
         destiGPSPos = destipos;
         runSimpleMission();
 
     }
+
     //从起点到终点的简单飞行任务
-    public void runSimpleMission(){
+    public void runSimpleMission() {
         State vehicleState = this.drone.getAttribute(AttributeType.STATE);
         if (vehicleState.isFlying()) {
-            LatLong destiGPSPos_fordk = new LatLong(destiGPSPos.latitude,destiGPSPos.longitude);
-            this.guide.sendGuidedPoint(this.drone,destiGPSPos_fordk,true);
+            LatLong destiGPSPos_fordk = new LatLong(destiGPSPos.latitude, destiGPSPos.longitude);
+            this.guide.goTo(destiGPSPos_fordk, true, new AbstractCommandListener() {
+                @Override
+                public void onSuccess() {
+                    Log.d("bluking", "GO To target successfully");
+                }
+
+                @Override
+                public void onError(int executionError) {
+                    Log.d("bluking", "GO To target failure");
+                }
+
+                @Override
+                public void onTimeout() {
+                    Log.d("bluking", "GO To target timeout");
+                }
+            });
+        }
+    }
+
+    protected Runnable getController = new Runnable() {
+        @Override
+        public void run() {
+//            if (allow_control) {
+                myhandler.postDelayed(this, 500);
+
+                RC_Controller();
+//                Log.e("bluking","Runnable!");
+//            }
+        }
+    };
+
+    protected void controllerAllow(View v) {
+        allow_control = true;
+        this.guide.enableManualControl(true, new ControlApi.ManualControlStateListener() {
+            @Override
+            public void onManualControlToggled(boolean isEnabled) {
+                alertUser("Manual Control Toggled!");
+            }
+        });
+//        Log.e("bluking","Allow Button Pressed!");
+    }
+
+    public void RC_Controller() {
+        if(allow_control) {
+
+            controller_val = controllerFragment.getControlValues();
+//            Log.e("bluking", controller_val.toString());
+            double throttle_val, pitch_val, yaw_val, roll_val;
+            throttle_val = controller_val[0];
+            pitch_val = controller_val[1];
+            yaw_val = controller_val[2];
+            roll_val = controller_val[3];
+//            Log.e("bluking",Double.toString(throttle_val));
+            State vehicleState = this.drone.getAttribute(AttributeType.STATE);
+//            if (vehicleState.isFlying()) {
+
+
+                this.guide.manualControl((float) pitch_val, (float) roll_val, (float) throttle_val, new AbstractCommandListener() {
+                    @Override
+                    public void onSuccess() {
+                        Log.e("bluking", "Controller successfully");
+                    }
+
+                    @Override
+                    public void onError(int executionError) {
+
+                    }
+
+                    @Override
+                    public void onTimeout() {
+
+                    }
+                });
+
+//            this.guide.turnTo((float)yaw_val,);
+
+//            }
         }
     }
 }

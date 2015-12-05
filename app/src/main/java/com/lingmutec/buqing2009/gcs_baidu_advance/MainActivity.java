@@ -14,19 +14,21 @@ import android.graphics.Color;
 /**
  * 项目的主Activity，所有的Fragment都嵌入在这里。
  *
- * @author guolin
+ * @author bluking
  */
 public class MainActivity extends Activity implements OnClickListener {
 
     /**
-     * 用于展示消息的Fragment
+     * 用于BaiduMap的Fragment
      */
     private BaiduMapFragment baiduMapFragment;
 
     /**
-     * 用于展示联系人的Fragment
+     * 用于Dronekit的Fragment
      */
     private DronekitFragment dronekitFragment;
+
+    private ControllerFragment controllerFragment;
 
 
     /**
@@ -39,6 +41,8 @@ public class MainActivity extends Activity implements OnClickListener {
      */
     private View baiduMapLayout;
 
+    private View controllerLayout;
+
 
     /**
      * 在Tab布局上显示消息图标的控件
@@ -50,6 +54,8 @@ public class MainActivity extends Activity implements OnClickListener {
      */
     private ImageView baiduMapImage;
 
+    private ImageView controllerImage;
+
 
     /**
      * 在Tab布局上显示消息标题的控件
@@ -60,6 +66,8 @@ public class MainActivity extends Activity implements OnClickListener {
      * 在Tab布局上显示联系人标题的控件
      */
     private TextView baiduMapText;
+
+    private TextView controllerText;
 
 
 
@@ -77,24 +85,33 @@ public class MainActivity extends Activity implements OnClickListener {
         initViews();
         fragmentManager = getFragmentManager();
         // 第一次启动时选中第0个tab
-        setTabSelection(0);
+        setTabSelection(2);
+//        setTabSelection(0);
+//        setTabSelection(1);
+//        setTabSelection(0);
+
     }
 
     /**
      * 在这里获取到每个需要用到的控件的实例，并给它们设置好必要的点击事件。
      */
     private void initViews() {
+
         dronekitLayout = findViewById(R.id.dronekit_layout);
         baiduMapLayout = findViewById(R.id.baidumap_layout);
+        controllerLayout = findViewById(R.id.controller_layout);
 
         dronekitImage = (ImageView) findViewById(R.id.dronekit_image);
         baiduMapImage = (ImageView) findViewById(R.id.baidumap_image);
+        controllerImage = (ImageView) findViewById(R.id.controller_image);
 
         dronekitText = (TextView) findViewById(R.id.dronekit_text);
         baiduMapText = (TextView) findViewById(R.id.baidumap_text);
+        controllerText = (TextView) findViewById(R.id.controller_text);
 
         dronekitLayout.setOnClickListener(this);
         baiduMapLayout.setOnClickListener(this);
+        controllerLayout.setOnClickListener(this);
 
     }
 
@@ -108,6 +125,9 @@ public class MainActivity extends Activity implements OnClickListener {
             case R.id.baidumap_layout:
                 // 当点击了联系人tab时，选中第2个tab
                 setTabSelection(1);
+                break;
+            case R.id.controller_layout:
+                setTabSelection(2);
                 break;
             default:
                 break;
@@ -146,7 +166,6 @@ public class MainActivity extends Activity implements OnClickListener {
                 break;
 
             case 1:
-            default:
                 // 当点击了联系人tab时，改变控件的图片和文字颜色
                 baiduMapImage.setImageResource(R.drawable.contacts_selected);
                 baiduMapText.setTextColor(Color.WHITE);
@@ -159,6 +178,20 @@ public class MainActivity extends Activity implements OnClickListener {
                     transaction.show(baiduMapFragment);
                 }
                 break;
+
+            case 2:
+            default:
+
+                controllerImage.setImageResource(R.drawable.news_selected);
+                controllerText.setTextColor(Color.WHITE);
+                if(controllerFragment == null){
+                    controllerFragment = new ControllerFragment();
+                    transaction.add(R.id.content,controllerFragment,"Controller");
+                }else {
+                    transaction.show(controllerFragment);
+                }
+                break;
+
         }
         transaction.commit();
     }
@@ -171,6 +204,8 @@ public class MainActivity extends Activity implements OnClickListener {
         dronekitText.setTextColor(Color.parseColor("#82858b"));
         baiduMapImage.setImageResource(R.drawable.contacts_unselected);
         baiduMapText.setTextColor(Color.parseColor("#82858b"));
+        controllerImage.setImageResource(R.drawable.news_unselected);
+        controllerText.setTextColor(Color.parseColor("#82858b"));
     }
 
     /**
@@ -185,6 +220,9 @@ public class MainActivity extends Activity implements OnClickListener {
         }
         if (baiduMapFragment != null) {
             transaction.hide(baiduMapFragment);
+        }
+        if(controllerFragment != null){
+            transaction.hide(controllerFragment);
         }
 
     }

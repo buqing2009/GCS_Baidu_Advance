@@ -9,6 +9,13 @@
         <item>UDP</item>
     </string-array>
 
+
+    <string name="angle_value"> %1$.2f</string>
+    <string name="offset_value">%1$.2f </string>
+    <string name="angle_value_none"> none</string>
+    <string name="offset_value_none">none </string>
+
+
 </resources>
 
 

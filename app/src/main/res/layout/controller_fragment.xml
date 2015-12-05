@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:weightSum="1"
+    android:gravity="bottom">
+
+    <com.jmedeisis.bugstick.Joystick
+        android:id="@+id/joystick1"
+        android:layout_width="326dp"
+        android:layout_height="187dp"
+        android:background="@drawable/bg_base"
+        app:start_on_first_touch="true"
+        app:force_square="true"
+        app:motion_constraint="None"
+        android:layout_weight="0.27"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <Button
+            android:layout_width="@dimen/stick_size"
+            android:layout_height="@dimen/stick_size"
+            android:background="@drawable/bg_stick" />
+
+    </com.jmedeisis.bugstick.Joystick>
+
+    <com.jmedeisis.bugstick.Joystick
+        android:id="@+id/joystick2"
+        android:layout_width="326dp"
+        android:layout_height="187dp"
+        android:background="@drawable/bg_base"
+        app:start_on_first_touch="true"
+        app:force_square="true"
+        app:motion_constraint="None"
+        android:layout_weight="0.27"
+        android:layout_gravity="right"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true">
+
+        <Button
+            android:layout_width="@dimen/stick_size"
+            android:layout_height="@dimen/stick_size"
+            android:background="@drawable/bg_stick" />
+
+    </com.jmedeisis.bugstick.Joystick>
+
+    <TableLayout android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+        android:layout_marginTop="142dp"
+        android:layout_alignTop="@+id/joystick2"
+        android:layout_centerHorizontal="true">
+        <TableRow>
+            <TextView android:text="油门大小：" android:layout_width="50dip"
+                android:layout_height="wrap_content"></TextView>
+            <TextView android:text="" android:id="@+id/TextViewX1"
+                android:layout_width="150dip" android:layout_height="wrap_content"></TextView>
+
+            <TextView android:text="前后：" android:layout_width="50dip"
+                android:layout_height="wrap_content"></TextView>
+            <TextView android:text="" android:id="@+id/TextViewX2"
+                android:layout_width="100dip" android:layout_height="wrap_content"></TextView>
+        </TableRow>
+        <TableRow>
+            <TextView android:text="转向大小：" android:layout_width="wrap_content"
+                android:layout_height="wrap_content"></TextView>
+            <TextView android:text="" android:id="@+id/TextViewY1"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+
+            <TextView android:text="左右：" android:layout_width="wrap_content"
+                android:layout_height="wrap_content"></TextView>
+            <TextView android:text="" android:id="@+id/TextViewY2"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+        </TableRow>
+    </TableLayout>
+
+
+</RelativeLayout>
