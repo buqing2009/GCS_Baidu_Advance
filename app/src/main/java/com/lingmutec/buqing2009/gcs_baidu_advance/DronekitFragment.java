@@ -484,6 +484,7 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
             this.guide.goTo(destiGPSPos_fordk, true, new AbstractCommandListener() {
                 @Override
                 public void onSuccess() {
+
                     Log.d("bluking", "GO To target successfully");
                 }
 
@@ -494,6 +495,7 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
 
                 @Override
                 public void onTimeout() {
+
                     Log.d("bluking", "GO To target timeout");
                 }
             });
@@ -504,9 +506,9 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
         @Override
         public void run() {
 //            if (allow_control) {
-                myhandler.postDelayed(this, 500);
+            myhandler.postDelayed(this, 500);
 
-                RC_Controller();
+            RC_Controller();
 //                Log.e("bluking","Runnable!");
 //            }
         }
@@ -514,50 +516,73 @@ public class DronekitFragment extends Fragment implements View.OnClickListener, 
 
     protected void controllerAllow(View v) {
         allow_control = true;
-        this.guide.enableManualControl(true, new ControlApi.ManualControlStateListener() {
-            @Override
-            public void onManualControlToggled(boolean isEnabled) {
-                alertUser("Manual Control Toggled!");
-            }
-        });
+        alertUser("Control Passed!");
 //        Log.e("bluking","Allow Button Pressed!");
     }
 
     public void RC_Controller() {
-        if(allow_control) {
+        final ControlApi controller;
+        controller = this.guide;
+        if (allow_control) {
 
             controller_val = controllerFragment.getControlValues();
 //            Log.e("bluking", controller_val.toString());
-            double throttle_val, pitch_val, yaw_val, roll_val;
+            final double throttle_val, pitch_val, yaw_val, roll_val;
             throttle_val = controller_val[0];
-            pitch_val = controller_val[1];
-            yaw_val = controller_val[2];
+            yaw_val = controller_val[1];
+            pitch_val = controller_val[2];
             roll_val = controller_val[3];
 //            Log.e("bluking",Double.toString(throttle_val));
             State vehicleState = this.drone.getAttribute(AttributeType.STATE);
-//            if (vehicleState.isFlying()) {
+            controller.enableManualControl(true, new ControlApi.ManualControlStateListener() {
+                @Override
+                public void onManualControlToggled(boolean isEnabled) {
 
+                    if(isEnabled) {
+                        //发送舵量,前后和左右值
+                        controller.manualControl((float) pitch_val, (float) roll_val, (float) -throttle_val, new AbstractCommandListener() {
+                            @Override
+                            public void onSuccess() {
+                                Log.e("bluking", "Controller successfully");
+                            }
 
-                this.guide.manualControl((float) pitch_val, (float) roll_val, (float) throttle_val, new AbstractCommandListener() {
-                    @Override
-                    public void onSuccess() {
-                        Log.e("bluking", "Controller successfully");
+                            @Override
+                            public void onError(int executionError) {
+
+                            }
+
+                            @Override
+                            public void onTimeout() {
+
+                            }
+                        });
+                        //发送yaw转向角
+                        controller.turnTo((float)(5*yaw_val), (float)yaw_val, true, new AbstractCommandListener() {
+                            @Override
+                            public void onSuccess() {
+
+                            }
+
+                            @Override
+                            public void onError(int executionError) {
+
+                            }
+
+                            @Override
+                            public void onTimeout() {
+
+                            }
+                        });
                     }
+                }
+            });
 
-                    @Override
-                    public void onError(int executionError) {
 
-                    }
 
-                    @Override
-                    public void onTimeout() {
-
-                    }
-                });
 
 //            this.guide.turnTo((float)yaw_val,);
 
-//            }
+
         }
     }
 }
