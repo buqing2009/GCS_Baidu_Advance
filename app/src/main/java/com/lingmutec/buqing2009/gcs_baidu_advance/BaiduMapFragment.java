@@ -287,7 +287,6 @@ public class BaiduMapFragment extends Fragment implements View.OnClickListener{
                         LatLng dronePos_bd = converter.convert();
                         OverlayOptions options = new MarkerOptions().position(dronePos_bd).icon(droneMarker);
                         bdMap.addOverlay(options);
-
                     }
                 }
             }
